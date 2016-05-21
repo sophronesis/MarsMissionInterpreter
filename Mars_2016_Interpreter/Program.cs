@@ -332,7 +332,7 @@ namespace Mars_2016_Interpreter
                     }
                     Console.WriteLine(changeVariableMatch.Groups[1] + " = " + _variablesStorage[changeVariableMatch.Groups[1].ToString()]);
                     _currentPos += 1;
-                }
+                } 
                 else if (new Regex(@"^\s*$").IsMatch(SourceCode[_currentPos]))
                 {
                     _currentPos += 1;
