@@ -1,0 +1,30 @@
+left;
+right;
+right;
+forward;
+right;
+backward;
+forward;
+forward;
+forward;
+forward;
+forward;
+forward;
+forward;
+right;
+backward;
+backward;
+backward;
+backward;
+backward;
+backward;
+backward;
+backward;
+backward;
+goto 24;
+suck cock lol
+backward;
+int  i;
+int j = 10 * 13;
+i += 10 + ( 4 * 3 )  ;
+
