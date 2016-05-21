@@ -241,7 +241,7 @@ namespace Mars_2016_Interpreter
         {
             if (!IsCompleted)
             {
-                Console.WriteLine(_currentPos);
+                Console.WriteLine(_currentPos+1);
                 Regex currRegex;
                 //check for end of file
                 if (_currentPos > SourceCode.Length - 1)//last row check
@@ -261,89 +261,77 @@ namespace Mars_2016_Interpreter
                 {
                     Match gotoMatch = currRegex.Match(SourceCode[_currentPos]);
                     if (gotoMatch.Success)
-                    {
-                        _currentPos = int.Parse(gotoMatch.Groups[1].ToString()) + 1;
-                        if ((_currentPos < 0) && (_currentPos >= SourceCode.Length)) throw new Exception("Wrong goto position");
-                        Console.WriteLine("goto " + gotoMatch.Groups[1]);
-                    }
+                    _currentPos = int.Parse(gotoMatch.Groups[1].ToString())-1;
+                    if ((_currentPos < 0) && (_currentPos >= SourceCode.Length)) throw new Exception("Wrong goto position");
+                    Console.WriteLine("goto " + gotoMatch.Groups[1]);
                 }
                 //assigment of new var
                 else if ((currRegex = new Regex(@"\s*(float|int)\s*([a-zA-Z_\-][a-zA-Z0-9_\-]*)\s*\=\s*(.+?)\s*;")).IsMatch(SourceCode[_currentPos]))
                 {
                     Match setVariableMatch = currRegex.Match(SourceCode[_currentPos]);
-                    if (setVariableMatch.Success)
+                    for (int i = 1; i < setVariableMatch.Groups.Count; ++i)
+                        Console.WriteLine(setVariableMatch.Groups[i]);
+                    switch (setVariableMatch.Groups[0].ToString())
                     {
-                        for (int i = 1; i < setVariableMatch.Groups.Count; ++i)
-                            Console.WriteLine(setVariableMatch.Groups[i]);
-                        switch (setVariableMatch.Groups[0].ToString())
-                        {
-                            case "float":
-                                _variablesStorage.Add(setVariableMatch.Groups[1].ToString(), EquationParser.Calculate(setVariableMatch.Groups[2].ToString(), _variablesStorage));
-                                Console.WriteLine(setVariableMatch.Groups[1] + " = " + _variablesStorage[setVariableMatch.Groups[1].ToString()]);
-                                break;
-                            case "int":
-                                _variablesStorage.Add(setVariableMatch.Groups[1].ToString(), (int)EquationParser.Calculate(setVariableMatch.Groups[2].ToString(), _variablesStorage));
-                                Console.WriteLine(setVariableMatch.Groups[1] + " = " + _variablesStorage[setVariableMatch.Groups[1].ToString()]);
-                                break;
-                        }
-                        Console.WriteLine(setVariableMatch.Groups[1].ToString() + "-" + setVariableMatch.Groups[2].ToString() + "-" + setVariableMatch.Groups[3].ToString());
-                        _currentPos += 1;
+                        case "float":
+                            _variablesStorage.Add(setVariableMatch.Groups[1].ToString(), EquationParser.Calculate(setVariableMatch.Groups[2].ToString(), _variablesStorage));
+                            Console.WriteLine(setVariableMatch.Groups[1] + " = " + _variablesStorage[setVariableMatch.Groups[1].ToString()]);
+                            break;
+                        case "int":
+                            _variablesStorage.Add(setVariableMatch.Groups[1].ToString(), (int)EquationParser.Calculate(setVariableMatch.Groups[2].ToString(), _variablesStorage));
+                            Console.WriteLine(setVariableMatch.Groups[1] + " = " + _variablesStorage[setVariableMatch.Groups[1].ToString()]);
+                            break;
                     }
+                    Console.WriteLine(setVariableMatch.Groups[1].ToString() + "-" + setVariableMatch.Groups[2].ToString() + "-" + setVariableMatch.Groups[3].ToString());
+                    _currentPos += 1;
                 }
                 //new var w/o assignment
                 else if ((currRegex = new Regex(@"\s*(float|int)\s*([a-zA-Z_\-][a-zA-Z0-9_\-]*)\s*;")).IsMatch(SourceCode[_currentPos]))
                 {
                     Match createVariableMatch = currRegex.Match(SourceCode[_currentPos]);
-                    if (createVariableMatch.Success)
+                    for (int i = 1; i < createVariableMatch.Groups.Count; ++i)
+                        Console.WriteLine(createVariableMatch.Groups[i]);
+                    switch (createVariableMatch.Groups[1].ToString())
                     {
-                        for (int i = 1; i < createVariableMatch.Groups.Count; ++i)
-                            Console.WriteLine(createVariableMatch.Groups[i]);
-                        switch (createVariableMatch.Groups[1].ToString())
-                        {
-                            case "float":
-                                _variablesStorage.Add(createVariableMatch.Groups[2].ToString(), 0f);
-                                break;
-                            case "int":
-                                _variablesStorage.Add(createVariableMatch.Groups[2].ToString(), 0);
-                                break;
-                        }
-                        Console.WriteLine(createVariableMatch.Groups[2] + " = " + _variablesStorage[createVariableMatch.Groups[2].ToString()]);
-                        Console.WriteLine(createVariableMatch.Groups[1].ToString() + "-" + createVariableMatch.Groups[2].ToString());
-                        _currentPos += 1;
+                        case "float":
+                            _variablesStorage.Add(createVariableMatch.Groups[2].ToString(), 0f);
+                            break;
+                        case "int":
+                            _variablesStorage.Add(createVariableMatch.Groups[2].ToString(), 0);
+                            break;
                     }
+                    Console.WriteLine(createVariableMatch.Groups[2] + " = " + _variablesStorage[createVariableMatch.Groups[2].ToString()]);
+                    Console.WriteLine(createVariableMatch.Groups[1].ToString() + "-" + createVariableMatch.Groups[2].ToString());
+                    _currentPos += 1;
                 }
                 //existing value change
                 else if ((currRegex = new Regex(@"\s*([a-zA-Z_\-][a-zA-Z0-9_\-]*)\s*([\+\-\*\/]?\=)\s*(.+?)\s*;")).IsMatch(SourceCode[_currentPos]))
                 {
                     Match changeVariableMatch = currRegex.Match(SourceCode[_currentPos]);
-                    if (changeVariableMatch.Success)
+                    for (int i = 1; i < changeVariableMatch.Groups.Count; ++i)
+                        Console.WriteLine(changeVariableMatch.Groups[i]);
+                    float equationResult = EquationParser.Calculate(changeVariableMatch.Groups[3].ToString(),
+                                                             _variablesStorage);
+                    switch (changeVariableMatch.Groups[2].ToString())
                     {
-                        for (int i = 1; i < changeVariableMatch.Groups.Count; ++i)
-                            Console.WriteLine(changeVariableMatch.Groups[i]);
-                        float equationResult = EquationParser.Calculate(changeVariableMatch.Groups[3].ToString(),
-                                                                 _variablesStorage);
-                        switch (changeVariableMatch.Groups[2].ToString())
-                        {
-                            case "=":
-                                _variablesStorage[changeVariableMatch.Groups[1].ToString()] = equationResult;
-                                break;
-                            case "+=":
-                                _variablesStorage[changeVariableMatch.Groups[1].ToString()] += equationResult;
-                                break;
-                            case "-=":
-                                _variablesStorage[changeVariableMatch.Groups[1].ToString()] -= equationResult;
-                                break;
-                            case "*=":
-                                _variablesStorage[changeVariableMatch.Groups[1].ToString()] *= equationResult;
-                                break;
-                            case "/=":
-                                _variablesStorage[changeVariableMatch.Groups[1].ToString()] /= equationResult;
-                                break;
-                        }
-                        Console.WriteLine(changeVariableMatch.Groups[1] + " = " + _variablesStorage[changeVariableMatch.Groups[1].ToString()]);
-                        _currentPos += 1;
+                        case "=":
+                            _variablesStorage[changeVariableMatch.Groups[1].ToString()] = equationResult;
+                            break;
+                        case "+=":
+                            _variablesStorage[changeVariableMatch.Groups[1].ToString()] += equationResult;
+                            break;
+                        case "-=":
+                            _variablesStorage[changeVariableMatch.Groups[1].ToString()] -= equationResult;
+                            break;
+                        case "*=":
+                            _variablesStorage[changeVariableMatch.Groups[1].ToString()] *= equationResult;
+                            break;
+                        case "/=":
+                            _variablesStorage[changeVariableMatch.Groups[1].ToString()] /= equationResult;
+                            break;
                     }
-                    else throw new Exception("Unexpected statement at " + (_currentPos + 1) + " row.");
+                    Console.WriteLine(changeVariableMatch.Groups[1] + " = " + _variablesStorage[changeVariableMatch.Groups[1].ToString()]);
+                    _currentPos += 1;
                 }
                 else if (new Regex(@"^\s*$").IsMatch(SourceCode[_currentPos]))
                 {
