@@ -20,7 +20,6 @@ namespace Mars_2016_Interpreter
             this.Y = y;
         }
     }
-
     class Command
     {
         public string Name;
@@ -32,7 +31,6 @@ namespace Mars_2016_Interpreter
             this.Args = args;
         }
     }
-
     class Map
     {
         public int[][] map;
@@ -94,25 +92,28 @@ namespace Mars_2016_Interpreter
             }
         }
     }
-
     static class EquationParser
-    { 
-        private static Dictionary<string, int> _operators;
+    {
+        /// <summary>
+        /// Dictionary of operators and their precedence
+        /// </summary>
+        private static readonly Dictionary<string, int> Operators = new Dictionary<string, int>(5) {{"/",3},{"*",3},{"-",2},{"+",2},{"(",-1}};
         static EquationParser()
         {
-            _operators = new Dictionary<string, int>();
-            _operators.Add("/", 3);
-            _operators.Add("*", 3);
-            _operators.Add("-", 2);
-            _operators.Add("+", 2);
-            _operators.Add("(", -1);
         }
+        /// <summary>
+        /// Split input string into numeric and operator tokens
+        /// </summary>
+        /// <param name="equation">Input equation</param>
+        /// <returns>Tokened equation</returns>
         public static List<string> Tokenize(string equation)
         {
             List<string> tokens = new List<string>();
             string currentEquation = equation;
+            //Counting number of opened and closed parentheses
             int parenthesesCount = 0;
-            var regex = new Regex(@"\s*(\d*\.\d+?|\d+|[A-Za-z]\w*|[-+*/\(\)])\s*");
+            //removing redindant whitespace from tokens with this regex
+            Regex regex = new Regex(@"\s*(\d*\.\d+?|\d+|[A-Za-z]\w*|[-+*/\(\)])\s*");
             while (regex.IsMatch(currentEquation))
             {
                 Capture fullcapt = regex.Match(currentEquation).Groups[0].Captures[0];
@@ -136,21 +137,30 @@ namespace Mars_2016_Interpreter
             return tokens;
             
         }
+        /// <summary>
+        /// Convert tokens from infix from to postfix (RPN)
+        /// </summary>
+        /// <param name="tokens">Equation tokens list</param>
+        /// <param name="variablesStorage">Variables storage</param>
+        /// <returns>Postfix notation tokens</returns>
         public static List<string> ConvertToRpn(List<string> tokens, Dictionary<string, float> variablesStorage)
         {
             List<string> outputQueue = new List<string>();
             Stack<string> operatorsStack= new Stack<string>();
-            float number;
             foreach (string token in tokens)
             {
-                if (float.TryParse(token,out number))//is number
+                float number;
+                //handling numeric token as a number
+                if (float.TryParse(token,out number))
                     outputQueue.Add(token);
+                //handling alphabetic token and checking if it's a variable
                 else if (new Regex(@"[a-zA-z_][a-zA-z_0-9]").IsMatch(token))
                 {
                     if (variablesStorage.ContainsKey(token)) outputQueue.Add(token);
                     else throw new Exception("Can't find variable with name \""+token+"\"");
 
                 }
+                //handling parentheses 
                 else if (token == "(") operatorsStack.Push(token);
                 else if (token == ")")
                 {
@@ -160,26 +170,35 @@ namespace Mars_2016_Interpreter
                     if (operatorsStack.Count == 0) throw new Exception("Parentheses mismatch");
                     if (operatorsStack.Peek() == "(") operatorsStack.Pop();
                 }
-                else if (_operators.ContainsKey(token))
+                //handling operators
+                else if (Operators.ContainsKey(token))
                 {
                     while (operatorsStack.Count > 0)
-                        if (_operators[token] <= _operators[operatorsStack.Peek()])
+                        if (Operators[token] <= Operators[operatorsStack.Peek()])
                             outputQueue.Add(operatorsStack.Pop());
                         else break;
                     operatorsStack.Push(token);
                 }
-                else throw new Exception("Can't convert this row lol");//TODO
+                else throw new Exception("Unexpected token in equation");//TODO
             }
+            //add to output queue operators thats left
             foreach (string operators in operatorsStack)
                 outputQueue.Add(operators);
             return outputQueue;
         }
+        /// <summary>
+        /// Calculate equation value from postfix tokens
+        /// </summary>
+        /// <param name="tokens">Equation tokens list</param>
+        /// <param name="variablesStorage">Variables storage</param>
+        /// <returns>Result equation value</returns>
         public static float CalculateRpn(List<string> tokens, Dictionary<string, float> variablesStorage)
         {
             Stack<float> valueStack = new Stack<float>();
             float number;
             foreach (string token in tokens)
             {
+                //if token is value or variable - put it in stack
                 if (float.TryParse(token, out number))//is number
                     valueStack.Push(number);
                 else if (variablesStorage.ContainsKey(token))
@@ -187,7 +206,8 @@ namespace Mars_2016_Interpreter
                     float value = variablesStorage[token];
                     valueStack.Push(value);
                 }
-                else if (_operators.ContainsKey(token))
+                //if token is operator - take numbers from stack and apply this operator
+                else if (Operators.ContainsKey(token))
                 {
                     switch (token)
                     {
@@ -207,21 +227,27 @@ namespace Mars_2016_Interpreter
                             break;
                     }
                 }
-                else throw new Exception("Can't calculate this row lol");//TODO
+                else throw new Exception("Unexpected token in equation");
             }
-            return valueStack.Peek();//todo: add check of stack length
+            if (valueStack.Count == 1)
+                return valueStack.Peek(); 
+            throw new Exception("Operators/Numbers mismatch");
         }
+        /// <summary>
+        /// Do full equation calculation process
+        /// </summary>
+        /// <param name="equation">Source equation</param>
+        /// <param name="variablesStorage">Variables Storage</param>
+        /// <returns>Equation result</returns>
         public static float Calculate(string equation, Dictionary<string, float> variablesStorage)
         {
-            Console.WriteLine("!");
             return CalculateRpn(ConvertToRpn(Tokenize(equation), variablesStorage), variablesStorage);
         }
     }
-
     class Interpreter
     {
         public event CommandSender CommandEvent;
-        private Dictionary<string, int> _roverCommand = new Dictionary<string, int>(0);
+        private Dictionary<string, int> _roverCommand = new Dictionary<string, int>(4) { { "right", 0 }, { "forward", 1 }, { "left", 2 }, { "backward", 3 } };
         private int _currentPos;
         private Dictionary<string, float> _variablesStorage = new Dictionary<string, float>();
         public bool IsCompleted = false;
@@ -230,13 +256,11 @@ namespace Mars_2016_Interpreter
         {
             SourceCode = sourceCode;
             _currentPos = 0;
-            _roverCommand = new Dictionary<string, int>();
-            _roverCommand.Add("right", 0);
-            _roverCommand.Add("forward", 1);
-            _roverCommand.Add("left", 2);
-            _roverCommand.Add("backward", 3);
             //CommandEvent += map.CommandHandle;
         }
+        /// <summary>
+        /// Do all instructions from source untill reaching rover command
+        /// </summary>
         public void NextAction()
         {
             if (!IsCompleted)
@@ -340,7 +364,6 @@ namespace Mars_2016_Interpreter
             }
         }
     }
-
     class Program
     {
         static void Main(string[] args)
